@@ -1,63 +1,14 @@
-# Estacionamento-Inteligente---IOT---VivEtec
+# Estacionamento Inteligente - IoT - VivETEC
 
 # VagaJá
 
 Sistema de estacionamento inteligente desenvolvido para o projeto **VivETEC**.
 
-O objetivo do VagaJá é permitir o monitoramento das vagas de um estacionamento de forma simples, utilizando um **ESP8266** como parte do sistema de comunicação e uma interface web para visualizar a disponibilidade das vagas.
+O objetivo do **VagaJá** é monitorar **8 vagas de estacionamento (V1 a V8)** por meio de sensores, indicar localmente o estado de cada vaga com LEDs e enviar essas informações pela rede para um servidor, permitindo que o site mostre quais vagas estão livres ou ocupadas.
 
 ## Sobre o projeto
 
-Nesta etapa do projeto, o sistema é preparado para monitorar **8 vagas**. O ESP8266 funciona como servidor local e cria sua própria rede Wi-Fi chamada:
-
-```text
-VagaJa
-```
-
-Ao conectar um celular ou computador nessa rede, é possível acessar o ESP8266 pelo endereço:
-
-
-O VagaJá é um projeto de estacionamento inteligente desenvolvido por alunos da ETEC Vereador Valdivino Antônio Marcusso para a VivETEC.
-A maquete terá oito vagas, de V1 a V8. Cada vaga terá um sensor para detectar a presença do carrinho e um LED vermelho, que ficará aceso quando estiver ocupada e apagado quando estiver livre.
-O programa da placa será feito em C. Ela se conectará à internet e enviará os estados das vagas para um servidor também desenvolvido em C, hospedado em uma VPS.
-O site utiliza HTML, CSS e JavaScript e mostrará as vagas livres, ocupadas e a quantidade disponível, com atualização automática. Os visitantes poderão acessá-lo pelo QR Code, usando a internet do celular.
-Fluxo do sistema:
-Sensores → placa → internet → servidor na VPS → site.
-Atualmente, o site já possui oito vagas, tema claro e escuro, efeitos visuais e testes com um simulador em Python. Ainda falta substituir esse servidor pelo programa em C, publicar na VPS e testar tudo com a maquete real. Os cards do grupo já foram ajustados para esse novo planejamento.
-
-```text
-http://192.168.4.1
-```
-
-O microcontrolador disponibiliza duas rotas principais:
-
-```text
-/
-```
-
-Exibe uma página simples informando que o servidor está funcionando.
-
-```text
-/vagas
-```
-
-Retorna o estado das **8 vagas** em formato JSON.
-
-Exemplo:
-
-```json
-{
-  "V1": 0,
-  "V2": 1,
-  "V3": 0,
-  "V4": 1,
-  "V5": 0,
-  "V6": 0,
-  "V7": 1,
-  "V8": 0,
-  "disponiveis": 5
-}
-```
+A maquete possui **8 vagas**. Cada vaga utiliza um sensor LDR para detectar a presença de um veículo e um LED vermelho para indicar seu estado.
 
 No padrão atual:
 
@@ -66,269 +17,514 @@ No padrão atual:
 1 = vaga ocupada
 ```
 
-> Nesta versão de teste, os estados das vagas ainda estão definidos diretamente no código do ESP8266.
+O ESP8266 faz a leitura dos oito sensores usando um **multiplexador CD4051**, já que a placa possui apenas uma entrada analógica A0. Os oito LEDs são controlados por um **expansor de portas PCF8574**.
+
+O fluxo atual do sistema é:
+
+```text
+8 LDRs
+   ↓
+CD4051
+   ↓
+ESP8266
+   ↓
+Wi-Fi
+   ↓
+Servidor / API
+   ↓
+Site VagaJá
+```
+
+## Hardware utilizado
+
+- ESP8266 / NodeMCU
+- 8 sensores LDR
+- CD4051 para seleção dos 8 sensores
+- PCF8574 para controle dos 8 LEDs
+- 8 LEDs vermelhos
+- resistores e componentes da maquete
+- conexão Wi-Fi
 
 ## Tecnologias utilizadas
 
-- ESP8266 / NodeMCU
-- Arduino Framework (C++)
-- Wi-Fi
-- Servidor HTTP local
+- Arduino Framework / C++
+- ESP8266WiFi
+- ESP8266HTTPClient
+- I2C / Wire
+- HTTP
+- JSON
 - HTML
 - CSS
 - JavaScript
-- JSON
 
-## Funcionamento
+## Funcionamento do ESP8266
 
-O funcionamento atual pode ser resumido assim:
+Diferente da versão inicial do projeto, o ESP8266 **não cria mais a própria rede Wi-Fi**. Ele funciona em modo estação (`WIFI_STA`) e se conecta a uma rede que tenha acesso ao servidor.
+
+```cpp
+WiFi.mode(WIFI_STA);
+WiFi.setAutoReconnect(true);
+WiFi.begin(WIFI_SSID, WIFI_SENHA);
+```
+
+As informações da rede devem ser configuradas no código:
+
+```cpp
+const char* WIFI_SSID  = "NOME_DO_WIFI";
+const char* WIFI_SENHA = "SENHA_DO_WIFI";
+```
+
+O endereço do servidor também deve ser configurado:
+
+```cpp
+const char* SERVIDOR = "http://192.168.1.100";
+```
+
+> O endereço `192.168.1.100` é apenas o endereço configurado atualmente para os testes e deve ser alterado conforme o servidor usado pelo projeto.
+
+## Leitura dos 8 sensores
+
+O projeto utiliza um **CD4051** para permitir que os oito LDRs sejam lidos pela entrada analógica `A0` do ESP8266.
+
+Os pinos de seleção utilizados são:
 
 ```text
-ESP8266 é ligado
-        ↓
-Cria a rede Wi-Fi "VagaJa"
-        ↓
-Inicia o servidor HTTP
-        ↓
-Usuário conecta o celular à rede
-        ↓
-Acessa http://192.168.4.1
-        ↓
-O navegador pode consultar /vagas
-        ↓
-O ESP8266 devolve os estados em JSON
+S0 = D5
+S1 = D6
+S2 = D7
 ```
 
-O código utiliza o modo `WIFI_AP`, portanto o próprio ESP8266 cria o ponto de acesso Wi-Fi.
-
-## Código do ESP8266
-
-O servidor é criado utilizando:
+O programa seleciona cada sensor individualmente e realiza a leitura:
 
 ```cpp
-ESP8266WebServer servidor(80);
+selecionarSensor(sensor);
+delay(5);
+int valor = analogRead(LDR);
 ```
 
-A rede Wi-Fi é iniciada com:
+O valor de referência atual é:
 
 ```cpp
-WiFi.mode(WIFI_AP);
-WiFi.softAPConfig(ip, gateway, subnet);
-WiFi.softAP(ssid, senha);
+int threshold = 500;
 ```
 
-O endereço configurado para o ESP8266 é:
+A lógica utilizada é:
 
 ```text
-192.168.4.1
+valor abaixo de 500 → vaga ocupada
+valor igual ou acima de 500 → vaga livre
 ```
 
-A rota principal é:
+Esse valor pode precisar de calibração quando os sensores forem instalados definitivamente na maquete.
+
+## Controle dos LEDs
+
+Os oito LEDs são controlados por um **PCF8574**, conectado ao ESP8266 pelo barramento I2C.
+
+Endereço utilizado:
 
 ```cpp
-servidor.on("/", HTTP_GET, []() {
-    servidor.send(
-        200,
-        "text/html",
-        "<h1>VagaJa</h1><p>Servidor funcionando!</p>"
-    );
-});
+#define PCF 0x20
 ```
 
-E a rota responsável por fornecer os dados das vagas é:
+I2C no ESP8266:
 
 ```cpp
-servidor.on("/vagas", HTTP_GET, []() {
-    String json = "{";
-    json += "\"V1\":0,";
-    json += "\"V2\":1,";
-    json += "\"V3\":0,";
-    json += "\"V4\":1,";
-    json += "\"V5\":0,";
-    json += "\"V6\":0,";
-    json += "\"V7\":1,";
-    json += "\"V8\":0,";
-    json += "\"disponiveis\":5";
-    json += "}";
-
-    servidor.send(200, "application/json", json);
-});
+Wire.begin(D2, D1);
 ```
 
-Durante a execução, o `loop()` mantém o servidor preparado para receber novas requisições:
+No sistema atual:
+
+```text
+vaga livre   → LED apagado
+vaga ocupada → LED vermelho aceso
+```
+
+## Comunicação com o servidor
+
+Para cada vaga, o ESP8266 envia uma requisição HTTP `POST` para:
+
+```text
+/api/vagas/1
+/api/vagas/2
+/api/vagas/3
+/api/vagas/4
+/api/vagas/5
+/api/vagas/6
+/api/vagas/7
+/api/vagas/8
+```
+
+Exemplo:
+
+```text
+http://192.168.1.100/api/vagas/1
+```
+
+O corpo enviado é um JSON simples.
+
+Vaga ocupada:
+
+```json
+{"ocupada":1}
+```
+
+Vaga livre:
+
+```json
+{"ocupada":0}
+```
+
+O ESP8266 também mostra no Monitor Serial o estado enviado e o código HTTP recebido.
+
+Exemplo:
+
+```text
+V1 = 1 | HTTP 200
+V2 = 0 | HTTP 200
+```
+
+## Ciclo de atualização
+
+O programa percorre as oito vagas, realiza a leitura dos sensores, atualiza os LEDs e envia o estado de cada vaga ao servidor.
+
+Ao final do ciclo existe um intervalo de:
 
 ```cpp
+delay(2000);
+```
+
+Assim, depois de finalizar o envio das oito vagas, o ESP8266 aguarda aproximadamente 2 segundos antes de começar uma nova leitura.
+
+
+## Funcionamento dos sensores e do ESP8266
+
+O ESP8266 é responsável por reunir as informações das **8 vagas**, controlar os LEDs e enviar os estados para o servidor.
+
+O funcionamento acontece da seguinte forma:
+
+```text
+LDRs das 8 vagas
+        ↓
+CD4051 seleciona um sensor por vez
+        ↓
+ESP8266 lê o valor pelo pino A0
+        ↓
+Compara o valor com o threshold
+        ↓
+Define a vaga como LIVRE ou OCUPADA
+        ↓
+PCF8574 atualiza os 8 LEDs
+        ↓
+ESP8266 envia o estado de cada vaga para o servidor
+```
+
+O **CD4051** permite utilizar oito sensores LDR com apenas uma entrada analógica do ESP8266. Os pinos `D5`, `D6` e `D7` selecionam qual sensor será lido.
+
+O **PCF8574** é utilizado para controlar os oito LEDs por I2C. No código atual, `D2` é usado como SDA e `D1` como SCL.
+
+A leitura utiliza atualmente:
+
+```cpp
+int threshold = 500;
+```
+
+A regra adotada é:
+
+```text
+valor < 500  → vaga ocupada
+valor >= 500 → vaga livre
+```
+
+Depois de identificar o estado, o ESP8266 envia uma requisição `POST` para a API da vaga correspondente, por exemplo:
+
+```text
+/api/vagas/1
+```
+
+com um JSON como:
+
+```json
+{"ocupada":1}
+```
+
+ou:
+
+```json
+{"ocupada":0}
+```
+
+<details>
+<summary><strong>Ver código completo — sensores, ESP8266, LEDs e envio ao servidor</strong></summary>
+
+```cpp
+#include <Wire.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+
+// =====================================================
+// Wi-Fi
+// =====================================================
+
+const char* WIFI_SSID  = "NOME_DO_WIFI";
+const char* WIFI_SENHA = "SENHA_DO_WIFI";
+
+// Servidor
+const char* SERVIDOR = "http://192.168.1.100";
+
+// =====================================================
+// LDR + CD4051
+// =====================================================
+
+#define LDR A0
+
+#define S0 D5
+#define S1 D6
+#define S2 D7
+
+// =====================================================
+// PCF8574
+// =====================================================
+
+#define PCF 0x20
+
+// =====================================================
+// Configurações
+// =====================================================
+
+int threshold = 500;
+
+const int NUM_VAGAS = 8;
+
+// =====================================================
+// Seleciona qual LDR será lido
+// =====================================================
+
+void selecionarSensor(int sensor) {
+
+  digitalWrite(S0, sensor & 1);
+  digitalWrite(S1, sensor & 2);
+  digitalWrite(S2, sensor & 4);
+}
+
+// =====================================================
+// Envia os LEDs para o PCF8574
+// =====================================================
+
+void leds(byte valor) {
+
+  Wire.beginTransmission(PCF);
+  Wire.write(valor);
+  Wire.endTransmission();
+}
+
+// =====================================================
+// Envia estado da vaga para o servidor
+// =====================================================
+
+bool enviarEstado(int vaga, bool ocupada) {
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wi-Fi desconectado.");
+    return false;
+  }
+
+  WiFiClient client;
+  HTTPClient http;
+
+  // Exemplo:
+  // http://192.168.1.100/api/vagas/1
+
+  String url = String(SERVIDOR) +
+               "/api/vagas/" +
+               String(vaga);
+
+  http.begin(client, url);
+
+  http.setTimeout(2000);
+
+  // JSON enviado:
+  // {"ocupada":1}
+  // ou
+  // {"ocupada":0}
+
+  http.addHeader("Content-Type", "application/json");
+
+  int estado;
+
+  if (ocupada) {
+    estado = 1;
+  } else {
+    estado = 0;
+  }
+
+  String json = "{\"ocupada\":" +
+                String(estado) +
+                "}";
+
+  int codigo = http.POST(json);
+
+  // Mostra no Monitor Serial
+  Serial.print("V");
+  Serial.print(vaga);
+  Serial.print(" = ");
+  Serial.print(estado);
+
+  Serial.print(" | HTTP ");
+  Serial.println(codigo);
+
+  http.end();
+
+  return codigo == 200;
+}
+
+// =====================================================
+// SETUP
+// =====================================================
+
+void setup() {
+
+  Serial.begin(115200);
+
+  // -----------------------------
+  // I2C
+  // -----------------------------
+
+  Wire.begin(D2, D1);
+
+  // -----------------------------
+  // CD4051
+  // -----------------------------
+
+  pinMode(S0, OUTPUT);
+  pinMode(S1, OUTPUT);
+  pinMode(S2, OUTPUT);
+
+  // Todos os LEDs desligados
+  leds(255);
+
+  // -----------------------------
+  // Wi-Fi
+  // -----------------------------
+
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.begin(WIFI_SSID, WIFI_SENHA);
+
+  Serial.print("Conectando ao Wi-Fi");
+
+  unsigned long inicio = millis();
+
+  while (WiFi.status() != WL_CONNECTED &&
+         millis() - inicio < 15000) {
+
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+
+    Serial.println("Wi-Fi conectado!");
+
+    Serial.print("IP do ESP8266: ");
+    Serial.println(WiFi.localIP());
+
+  } else {
+
+    Serial.println("Nao conectou ao Wi-Fi.");
+  }
+}
+
+// =====================================================
+// LOOP
+// =====================================================
+
 void loop() {
-    servidor.handleClient();
+
+  byte estadoLED = 255;
+
+  // ===================================================
+  // Lê os 8 sensores
+  // ===================================================
+
+  for (int sensor = 0; sensor < NUM_VAGAS; sensor++) {
+
+    // Seleciona o LDR
+    selecionarSensor(sensor);
+
+    delay(5);
+
+    // Lê o LDR
+    int valor = analogRead(LDR);
+
+    Serial.print("Sensor ");
+    Serial.print(sensor + 1);
+    Serial.print(": ");
+    Serial.println(valor);
+
+    // =================================================
+    // Pouca luz = vaga ocupada
+    // Muita luz = vaga vazia
+    // =================================================
+
+    bool ocupada = (valor < threshold);
+
+    // =================================================
+    // LED
+    // =================================================
+
+    if (ocupada) {
+
+      // LED ligado
+      estadoLED = estadoLED & ~(1 << sensor);
+
+    } else {
+
+      // LED desligado
+      estadoLED = estadoLED | (1 << sensor);
+    }
+
+    // =================================================
+    // POST
+    // =================================================
+
+    enviarEstado(sensor + 1, ocupada);
+  }
+
+  // Atualiza os 8 LEDs
+  leds(estadoLED);
+
+  delay(2000);
 }
 ```
 
+</details>
+
 ## Interface web
 
-O projeto também possui uma interface web desenvolvida em HTML, CSS e JavaScript.
+O site do VagaJá utiliza **HTML, CSS e JavaScript** e está preparado para apresentar as oito vagas, de V1 até V8.
 
-A versão atual da interface já possui estrutura visual para **8 vagas**, organizadas de V1 até V8, além de contador de vagas disponíveis, indicação de conexão e atualização dos estados.
+A interface mostra:
 
-O JavaScript trabalha com o padrão:
+- estado de cada vaga;
+- quantidade de vagas disponíveis;
+- indicação de conexão;
+- última atualização;
+- visualização em duas fileiras de quatro vagas;
+- tema claro e escuro.
+
+O JavaScript trabalha com:
 
 ```text
 V1, V2, V3, V4, V5, V6, V7 e V8
 ```
 
-e consulta a rota:
 
-```text
-/vagas
-```
+### Códigos da interface
 
-## Como testar
-
-1. Grave o código no ESP8266.
-2. Alimente a placa pela USB ou por uma fonte adequada.
-3. Aguarde o ESP8266 iniciar.
-4. No celular ou computador, procure a rede Wi-Fi:
-
-```text
-VagaJa
-```
-
-5. Conecte utilizando a senha:
-
-```text
-vagaja2026
-```
-
-6. Abra o navegador e acesse:
-
-```text
-http://192.168.4.1
-```
-
-7. Para visualizar diretamente os dados das vagas, acesse:
-
-```text
-http://192.168.4.1/vagas
-```
-
-## Estrutura sugerida do projeto
-
-```text
-VagaJa/
-├── firmware/
-│   └── esp8266/
-│       └── VagaJa.ino
-│
-├── site/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
-│
-└── README.md
-```
-
-## Status do projeto
-
-Atualmente o projeto está estruturado para **8 vagas (V1 a V8)** e já possui:
-
-- criação da rede Wi-Fi pelo ESP8266;
-- endereço local `192.168.4.1`;
-- servidor HTTP na porta 80;
-- rota principal `/`;
-- rota `/vagas`;
-- resposta em JSON com V1 até V8;
-- estrutura do site para exibir as oito vagas;
-- contador de vagas disponíveis;
-- interface preparada para as 8 vagas.
-
-## Próximas etapas
-
-As próximas etapas previstas para a integração completa são:
-
-- integrar os sensores reais ao estado de cada uma das 8 vagas;
-- atualizar os dados automaticamente;
-- integrar o ESP8266 ao servidor/VPS do projeto;
-- disponibilizar o site através de domínio público;
-- adicionar tratamento para perda de conexão e dados desatualizados;
-- finalizar a comunicação entre placa, servidor e interface web.
-
-## Projeto acadêmico
-
-Projeto desenvolvido para o **VivETEC**, relacionado ao curso de **Desenvolvimento de Sistemas** da **ETEC Vereador Valdivino Antônio Marcusso**.
-
----
-
-**VagaJá — Estacionamento Inteligente**
-
-
-# Códigos de cada parte
-
-Abaixo estão os códigos utilizados em cada parte do projeto. Eles foram separados por função para facilitar a consulta e a organização no GitHub.
-
-<details>
-<summary><strong>ESP8266 — servidor local e rota /vagas</strong></summary>
-
-```cpp
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-
-const char* ssid = "VagaJa";
-const char* senha = "vagaja2026";
-
-IPAddress ip(192, 168, 4, 1);
-IPAddress gateway(192, 168, 4, 1);
-IPAddress subnet(255, 255, 255, 0);
-
-ESP8266WebServer servidor(80);
-
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
-
-  WiFi.mode(WIFI_AP);
-
-  WiFi.softAPConfig(ip, gateway, subnet);
-  WiFi.softAP(ssid, senha);
-
-  Serial.println();
-  Serial.println("VagaJa iniciado!");
-  Serial.print("IP: ");
-  Serial.println(WiFi.softAPIP());
-
-  servidor.on("/", HTTP_GET, []() {
-    servidor.send(
-      200,
-      "text/html",
-      "<h1>VagaJa</h1><p>Servidor funcionando!</p>"
-    );
-  });
-
-  servidor.on("/vagas", HTTP_GET, []() {
-    String json = "{";
-    json += "\"V1\":0,";
-    json += "\"V2\":1,";
-    json += "\"V3\":0,";
-    json += "\"V4\":1,";
-    json += "\"V5\":0,";
-    json += "\"V6\":0,";
-    json += "\"V7\":1,";
-    json += "\"V8\":0,";
-    json += "\"disponiveis\":5";
-    json += "}";
-
-    servidor.send(200, "application/json", json);
-  });
-
-  servidor.begin();
-
-  Serial.println("Servidor HTTP iniciado!");
-}
-
-void loop() {
-  servidor.handleClient();
-}
-```
-
-</details>
+Os arquivos da interface ficam organizados dentro da própria seção do site. No GitHub, clique no título para abrir ou fechar cada código.
 
 <details>
 <summary><strong>HTML — index.html</strong></summary>
@@ -1834,6 +2030,78 @@ body { background: radial-gradient(ellipse at 90% 0%, #c51b2812, transparent 55%
 
 </details>
 
+## Como testar o ESP8266
+
+1. Configure `WIFI_SSID` e `WIFI_SENHA`.
+2. Configure o endereço correto em `SERVIDOR`.
+3. Grave o programa no ESP8266.
+4. Conecte os LDRs ao CD4051.
+5. Conecte o PCF8574 e os LEDs.
+6. Ligue o ESP8266 por USB ou por uma fonte adequada.
+7. Abra o Monitor Serial em `115200`.
+8. Verifique se aparece `Wi-Fi conectado!`.
+9. Observe as leituras dos sensores e os códigos HTTP enviados ao servidor.
+
+Exemplo esperado:
+
+```text
+Wi-Fi conectado!
+IP do ESP8266: 192.168.x.x
+
+Sensor 1: 430
+V1 = 1 | HTTP 200
+
+Sensor 2: 720
+V2 = 0 | HTTP 200
+```
+
+## Estrutura sugerida do projeto
+
+```text
+VagaJa/
+├── firmware/
+│   └── esp8266/
+│       └── VagaJa.ino
+│
+├── site/
+│   ├── index.html
+│   ├── style.css
+│   └── script.js
+│
+└── README.md
+```
+
+## Status atual
+
+O projeto está estruturado para **8 vagas** e atualmente possui:
+
+- leitura planejada de 8 LDRs usando CD4051;
+- controle de 8 LEDs pelo PCF8574;
+- conexão do ESP8266 a uma rede Wi-Fi;
+- envio HTTP do estado de cada vaga;
+- estados representados por `0` e `1`;
+- interface web preparada para V1 até V8;
+- contador de vagas disponíveis;
+- atualização automática da interface.
+
+## Próximas etapas
+
+- calibrar o valor `threshold` dos LDRs na maquete;
+- configurar o endereço definitivo do servidor;
+- integrar o ESP8266 à VPS;
+- adicionar autenticação na comunicação com a API;
+- publicar o site no domínio definitivo;
+- adicionar tratamento para dados desatualizados e perda de conexão;
+- testar todo o sistema com as oito vagas reais.
+
+## Projeto acadêmico
+
+Projeto desenvolvido para o **VivETEC**, relacionado ao curso de **Desenvolvimento de Sistemas** da **ETEC Vereador Valdivino Antônio Marcusso**.
+
+---
+
+**VagaJá — Estacionamento Inteligente**
+
 ## Organização dos arquivos
 
 ```text
@@ -1850,64 +2118,4 @@ VagaJa/
 └── README.md
 ```
 
-> Os blocos acima podem ser expandidos no GitHub clicando sobre o título de cada parte.
-
-
-int ledVermelhoV1 = 13;
-int ledVermelhoV2 = 12;
-int ledVermelhoV3 = 11;
-int ledVermelhoV4 = 10;
-int ledVermelhoV5 = 9;
-void setup() {
-  pinMode(ledVermelhoV1, OUTPUT);
-  pinMode(ledVermelhoV2, OUTPUT);
-  pinMode(ledVermelhoV3, OUTPUT);
-  pinMode(ledVermelhoV4, OUTPUT);
-  pinMode(ledVermelhoV5, OUTPUT);
-  Serial.begin(115200);
-}
-
-void loop() {
-  int LDRV1 = analogRead(A0);
-  Serial.println(LDRV1);
-  int LDRV2 = analogRead(A1);
-  Serial.println(LDRV2);
-  int LDRV3 = analogRead(A2);
-  Serial.println(LDRV3);
-  int LDRV4 = analogRead(A3);
-  Serial.println(LDRV4);
-  int LDRV5 = analogRead(A4);
-  Serial.println(LDRV5);
-
-  if (LDRV1 > 500) {
-    digitalWrite(ledVermelhoV1, HIGH);
-  } 
-  else {
-    digitalWrite(ledVermelhoV1, LOW);
-  }
-  if (LDRV2 > 500) {
-    digitalWrite(ledVermelhoV2, HIGH);
-  } 
-  else {
-    digitalWrite(ledVermelhoV2, LOW);
-  }
-  if (LDRV3 > 500) {
-    digitalWrite(ledVermelhoV3, HIGH);
-  } 
-  else {
-    digitalWrite(ledVermelhoV3, LOW);
-  }
-  if (LDRV4 > 500) {
-    digitalWrite(ledVermelhoV4, HIGH);
-  } 
-  else {
-    digitalWrite(ledVermelhoV4, LOW);
-  }
-  if (LDRV5 > 500) {
-    digitalWrite(ledVermelhoV5, HIGH);
-  } 
-  else {
-    digitalWrite(ledVermelhoV5, LOW);
-  }
-  delay(200);
-}
+O código do ESP8266 fica na seção **“Funcionamento dos sensores e do ESP8266”** e os códigos do site ficam na seção **“Interface web”**.
