@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>VagaJá | VivETEC</title>
+
+    <link rel="stylesheet" href="style.css?v=8">
+    <script src="script.js?v=8" defer></script>
+</head>
+
+<body>
+
+<header class="topo">
+
+    <div class="marca">
+
+        <div class="logo">
+            VJ
+        </div>
+
+        <div>
+            <span class="vivetec">
+                VivETEC
+            </span>
+
+            <h1>
+                VagaJá
+            </h1>
+
+            <p>
+                Estacionamento Inteligente
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="acoes-topo"><button id="alternarTema" type="button" aria-pressed="false">Tema escuro</button><div
+        id="statusConexao"
+        class="status conectando" role="status"
+    >
+
+        <span class="indicador"></span>
+
+        Conectando...
+
+    </div>
+
+</div></header>
+
+
+<main>
+
+    <section class="apresentacao">
+
+        <div>
+
+            <span class="tag">
+                PROJETO VIVETEC
+            </span>
+
+            <h2>
+                Encontre uma vaga
+                <span>em tempo real.</span>
+            </h2>
+
+            <p>
+                Acompanhe a disponibilidade das
+                oito vagas do estacionamento
+                diretamente pelo seu celular.
+            </p>
+
+        </div>
+
+
+        <div class="contador">
+
+            <span>
+                Vagas disponíveis
+            </span>
+
+            <strong id="quantidadeLivre">
+                --
+            </strong>
+
+            <small>
+                de 8 vagas
+            </small>
+
+        </div>
+
+    </section>
+
+
+    <section class="controles" aria-label="Fonte dos dados">
+        <label for="modo">Fonte dos dados</label>
+        <select id="modo"><option value="demo">Demonstração</option><option value="real" selected>Servidor do Yuri</option></select>
+        <a class="link-simulador" href="/simulador" target="_blank" rel="noopener">Abrir simulador ↗</a>
+        <p id="avisoModo" role="status">Consultando o servidor. Nesta etapa, os estados são simulados.</p>
+    </section>
+    <section class="painel">
+
+        <div class="titulo-painel">
+
+            <div>
+                <span class="mini-titulo">
+                    MONITORAMENTO
+                </span>
+
+                <h3>
+                    Situação do estacionamento
+                </h3>
+            </div>
+
+            <p>
+                Atualização automática
+            </p>
+
+        </div>
+
+
+        <div class="estacionamento">
+<div class="fileira-label">FILEIRA 1 <span>V1 — V4</span></div><div class="vagas">
+<div class="vaga desconhecida" id="vaga-v1"><span class="numero">V1</span><span id="led-v1" class="led desconhecida" aria-hidden="true"></span><span class="icone" aria-hidden="true">—</span><svg class="carro" viewBox="0 0 64 110" aria-hidden="true"><rect x="9" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="9" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="14" y="3" width="36" height="104" rx="14" fill="currentColor"/><path d="M20 29 Q32 21 44 29 L42 44 H22Z" fill="#192936"/><rect x="22" y="48" width="20" height="29" rx="5" fill="#ffffff33"/><path d="M22 81 H42 L44 92 H20Z" fill="#192936"/><path d="M19 12 H25 M39 12 H45" stroke="#fff6ce" stroke-width="4"/><path d="M19 99 H25 M39 99 H45" stroke="#ff3535" stroke-width="3"/></svg><span class="estado">SEM DADOS</span></div>
+<div class="vaga desconhecida" id="vaga-v2"><span class="numero">V2</span><span id="led-v2" class="led desconhecida" aria-hidden="true"></span><span class="icone" aria-hidden="true">—</span><svg class="carro" viewBox="0 0 64 110" aria-hidden="true"><rect x="9" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="9" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="14" y="3" width="36" height="104" rx="14" fill="currentColor"/><path d="M20 29 Q32 21 44 29 L42 44 H22Z" fill="#192936"/><rect x="22" y="48" width="20" height="29" rx="5" fill="#ffffff33"/><path d="M22 81 H42 L44 92 H20Z" fill="#192936"/><path d="M19 12 H25 M39 12 H45" stroke="#fff6ce" stroke-width="4"/><path d="M19 99 H25 M39 99 H45" stroke="#ff3535" stroke-width="3"/></svg><span class="estado">SEM DADOS</span></div>
+<div class="vaga desconhecida" id="vaga-v3"><span class="numero">V3</span><span id="led-v3" class="led desconhecida" aria-hidden="true"></span><span class="icone" aria-hidden="true">—</span><svg class="carro" viewBox="0 0 64 110" aria-hidden="true"><rect x="9" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="9" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="14" y="3" width="36" height="104" rx="14" fill="currentColor"/><path d="M20 29 Q32 21 44 29 L42 44 H22Z" fill="#192936"/><rect x="22" y="48" width="20" height="29" rx="5" fill="#ffffff33"/><path d="M22 81 H42 L44 92 H20Z" fill="#192936"/><path d="M19 12 H25 M39 12 H45" stroke="#fff6ce" stroke-width="4"/><path d="M19 99 H25 M39 99 H45" stroke="#ff3535" stroke-width="3"/></svg><span class="estado">SEM DADOS</span></div>
+<div class="vaga desconhecida" id="vaga-v4"><span class="numero">V4</span><span id="led-v4" class="led desconhecida" aria-hidden="true"></span><span class="icone" aria-hidden="true">—</span><svg class="carro" viewBox="0 0 64 110" aria-hidden="true"><rect x="9" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="9" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="14" y="3" width="36" height="104" rx="14" fill="currentColor"/><path d="M20 29 Q32 21 44 29 L42 44 H22Z" fill="#192936"/><rect x="22" y="48" width="20" height="29" rx="5" fill="#ffffff33"/><path d="M22 81 H42 L44 92 H20Z" fill="#192936"/><path d="M19 12 H25 M39 12 H45" stroke="#fff6ce" stroke-width="4"/><path d="M19 99 H25 M39 99 H45" stroke="#ff3535" stroke-width="3"/></svg><span class="estado">SEM DADOS</span></div>
+</div>
+<div class="corredor" aria-hidden="true"><span>→</span> CIRCULAÇÃO <span>→</span></div>
+<div class="fileira-label">FILEIRA 2 <span>V5 — V8</span></div><div class="vagas">
+<div class="vaga desconhecida" id="vaga-v5"><span class="numero">V5</span><span id="led-v5" class="led desconhecida" aria-hidden="true"></span><span class="icone" aria-hidden="true">—</span><svg class="carro" viewBox="0 0 64 110" aria-hidden="true"><rect x="9" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="9" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="14" y="3" width="36" height="104" rx="14" fill="currentColor"/><path d="M20 29 Q32 21 44 29 L42 44 H22Z" fill="#192936"/><rect x="22" y="48" width="20" height="29" rx="5" fill="#ffffff33"/><path d="M22 81 H42 L44 92 H20Z" fill="#192936"/><path d="M19 12 H25 M39 12 H45" stroke="#fff6ce" stroke-width="4"/><path d="M19 99 H25 M39 99 H45" stroke="#ff3535" stroke-width="3"/></svg><span class="estado">SEM DADOS</span></div>
+<div class="vaga desconhecida" id="vaga-v6"><span class="numero">V6</span><span id="led-v6" class="led desconhecida" aria-hidden="true"></span><span class="icone" aria-hidden="true">—</span><svg class="carro" viewBox="0 0 64 110" aria-hidden="true"><rect x="9" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="9" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="14" y="3" width="36" height="104" rx="14" fill="currentColor"/><path d="M20 29 Q32 21 44 29 L42 44 H22Z" fill="#192936"/><rect x="22" y="48" width="20" height="29" rx="5" fill="#ffffff33"/><path d="M22 81 H42 L44 92 H20Z" fill="#192936"/><path d="M19 12 H25 M39 12 H45" stroke="#fff6ce" stroke-width="4"/><path d="M19 99 H25 M39 99 H45" stroke="#ff3535" stroke-width="3"/></svg><span class="estado">SEM DADOS</span></div>
+<div class="vaga desconhecida" id="vaga-v7"><span class="numero">V7</span><span id="led-v7" class="led desconhecida" aria-hidden="true"></span><span class="icone" aria-hidden="true">—</span><svg class="carro" viewBox="0 0 64 110" aria-hidden="true"><rect x="9" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="9" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="14" y="3" width="36" height="104" rx="14" fill="currentColor"/><path d="M20 29 Q32 21 44 29 L42 44 H22Z" fill="#192936"/><rect x="22" y="48" width="20" height="29" rx="5" fill="#ffffff33"/><path d="M22 81 H42 L44 92 H20Z" fill="#192936"/><path d="M19 12 H25 M39 12 H45" stroke="#fff6ce" stroke-width="4"/><path d="M19 99 H25 M39 99 H45" stroke="#ff3535" stroke-width="3"/></svg><span class="estado">SEM DADOS</span></div>
+<div class="vaga desconhecida" id="vaga-v8"><span class="numero">V8</span><span id="led-v8" class="led desconhecida" aria-hidden="true"></span><span class="icone" aria-hidden="true">—</span><svg class="carro" viewBox="0 0 64 110" aria-hidden="true"><rect x="9" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="13" width="7" height="22" rx="3" fill="#121820"/><rect x="9" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="48" y="76" width="7" height="22" rx="3" fill="#121820"/><rect x="14" y="3" width="36" height="104" rx="14" fill="currentColor"/><path d="M20 29 Q32 21 44 29 L42 44 H22Z" fill="#192936"/><rect x="22" y="48" width="20" height="29" rx="5" fill="#ffffff33"/><path d="M22 81 H42 L44 92 H20Z" fill="#192936"/><path d="M19 12 H25 M39 12 H45" stroke="#fff6ce" stroke-width="4"/><path d="M19 99 H25 M39 99 H45" stroke="#ff3535" stroke-width="3"/></svg><span class="estado">SEM DADOS</span></div>
+</div>
+</div>
+        <div class="rodape-painel">
+
+            <div class="legenda">
+
+                <div>
+                    <span class="circulo led-apagado"></span>
+                    Livre · LED apagado
+                </div>
+
+                <div>
+                    <span class="circulo vermelho"></span>
+                    Ocupada · LED vermelho
+                </div>
+
+            </div>
+
+
+            <div class="ultima">
+
+                Última atualização:
+
+                <strong id="ultimaAtualizacao">
+                    aguardando...
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <section class="info">
+
+        <div class="info-card">
+
+            <span class="info-numero">
+                01
+            </span>
+
+            <div>
+                <strong>
+                    Sensor detecta
+                </strong>
+
+                <p>
+                    O sensor identifica se existe
+                    um veículo na vaga.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="info-card">
+
+            <span class="info-numero">
+                02
+            </span>
+
+            <div>
+                <strong>
+                    ESP32 processa
+                </strong>
+
+                <p>
+                    A placa recebe o estado de
+                    cada uma das vagas.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="info-card">
+
+            <span class="info-numero">
+                03
+            </span>
+
+            <div>
+                <strong>
+                    VagaJá atualiza
+                </strong>
+
+                <p>
+                    A página mostra as vagas
+                    livres e ocupadas.
+                </p>
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+
+    <strong>
+        VagaJá
+    </strong>
+
+    <span>
+        Projeto VivETEC
+    </span>
+
+    <span>
+        ETEC Vereador Valdivino Antônio Marcusso
+    </span>
+
+</footer>
+
+
+<noscript>Ative o JavaScript para acompanhar as vagas.</noscript>
+
+</body>
+</html>
