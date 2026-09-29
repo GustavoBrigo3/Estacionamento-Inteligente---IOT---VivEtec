@@ -16,6 +16,15 @@ VagaJa
 
 Ao conectar um celular ou computador nessa rede, é possível acessar o ESP8266 pelo endereço:
 
+
+O VagaJá é um projeto de estacionamento inteligente desenvolvido por alunos da ETEC Vereador Valdivino Antônio Marcusso para a VivETEC.
+A maquete terá oito vagas, de V1 a V8. Cada vaga terá um sensor para detectar a presença do carrinho e um LED vermelho, que ficará aceso quando estiver ocupada e apagado quando estiver livre.
+O programa da placa será feito em C. Ela se conectará à internet e enviará os estados das vagas para um servidor também desenvolvido em C, hospedado em uma VPS.
+O site utiliza HTML, CSS e JavaScript e mostrará as vagas livres, ocupadas e a quantidade disponível, com atualização automática. Os visitantes poderão acessá-lo pelo QR Code, usando a internet do celular.
+Fluxo do sistema:
+Sensores → placa → internet → servidor na VPS → site.
+Atualmente, o site já possui oito vagas, tema claro e escuro, efeitos visuais e testes com um simulador em Python. Ainda falta substituir esse servidor pelo programa em C, publicar na VPS e testar tudo com a maquete real. Os cards do grupo já foram ajustados para esse novo planejamento.
+
 ```text
 http://192.168.4.1
 ```
@@ -1842,3 +1851,63 @@ VagaJa/
 ```
 
 > Os blocos acima podem ser expandidos no GitHub clicando sobre o título de cada parte.
+
+
+int ledVermelhoV1 = 13;
+int ledVermelhoV2 = 12;
+int ledVermelhoV3 = 11;
+int ledVermelhoV4 = 10;
+int ledVermelhoV5 = 9;
+void setup() {
+  pinMode(ledVermelhoV1, OUTPUT);
+  pinMode(ledVermelhoV2, OUTPUT);
+  pinMode(ledVermelhoV3, OUTPUT);
+  pinMode(ledVermelhoV4, OUTPUT);
+  pinMode(ledVermelhoV5, OUTPUT);
+  Serial.begin(115200);
+}
+
+void loop() {
+  int LDRV1 = analogRead(A0);
+  Serial.println(LDRV1);
+  int LDRV2 = analogRead(A1);
+  Serial.println(LDRV2);
+  int LDRV3 = analogRead(A2);
+  Serial.println(LDRV3);
+  int LDRV4 = analogRead(A3);
+  Serial.println(LDRV4);
+  int LDRV5 = analogRead(A4);
+  Serial.println(LDRV5);
+
+  if (LDRV1 > 500) {
+    digitalWrite(ledVermelhoV1, HIGH);
+  } 
+  else {
+    digitalWrite(ledVermelhoV1, LOW);
+  }
+  if (LDRV2 > 500) {
+    digitalWrite(ledVermelhoV2, HIGH);
+  } 
+  else {
+    digitalWrite(ledVermelhoV2, LOW);
+  }
+  if (LDRV3 > 500) {
+    digitalWrite(ledVermelhoV3, HIGH);
+  } 
+  else {
+    digitalWrite(ledVermelhoV3, LOW);
+  }
+  if (LDRV4 > 500) {
+    digitalWrite(ledVermelhoV4, HIGH);
+  } 
+  else {
+    digitalWrite(ledVermelhoV4, LOW);
+  }
+  if (LDRV5 > 500) {
+    digitalWrite(ledVermelhoV5, HIGH);
+  } 
+  else {
+    digitalWrite(ledVermelhoV5, LOW);
+  }
+  delay(200);
+}
