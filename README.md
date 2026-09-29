@@ -199,50 +199,138 @@ Assim, depois de finalizar o envio das oito vagas, o ESP8266 aguarda aproximadam
 
 ## Funcionamento dos sensores e do ESP8266
 
-O ESP8266 é responsável por reunir as informações das **8 vagas**, controlar os LEDs e enviar os estados para o servidor.
+O ESP8266 é responsável por ler os **8 sensores LDR**, controlar os **8 LEDs** e enviar o estado de cada vaga para o servidor.
 
-O funcionamento acontece da seguinte forma:
+O fluxo atual funciona assim:
 
 ```text
-LDRs das 8 vagas
-        ↓
-CD4051 seleciona um sensor por vez
-        ↓
-ESP8266 lê o valor pelo pino A0
-        ↓
-Compara o valor com o threshold
-        ↓
-Define a vaga como LIVRE ou OCUPADA
-        ↓
-PCF8574 atualiza os 8 LEDs
-        ↓
-ESP8266 envia o estado de cada vaga para o servidor
+8 LDRs
+   ↓
+CD4051
+   ↓
+ESP8266
+   ↓
+PCF8574 controla os LEDs
+   ↓
+Wi-Fi
+   ↓
+POST /api/vagas/1 até /api/vagas/8
+   ↓
+Servidor / API
 ```
 
-O **CD4051** permite utilizar oito sensores LDR com apenas uma entrada analógica do ESP8266. Os pinos `D5`, `D6` e `D7` selecionam qual sensor será lido.
+### Leitura dos sensores
 
-O **PCF8574** é utilizado para controlar os oito LEDs por I2C. No código atual, `D2` é usado como SDA e `D1` como SCL.
+Como o ESP8266 possui apenas uma entrada analógica `A0`, o projeto utiliza um **CD4051** para selecionar qual dos oito LDRs será lido.
 
-A leitura utiliza atualmente:
+Os pinos usados para seleção são:
+
+```text
+S0 = D5
+S1 = D6
+S2 = D7
+LDR = A0
+```
+
+O código seleciona um sensor por vez:
+
+```cpp
+digitalWrite(S0, sensor & 1);
+digitalWrite(S1, sensor & 2);
+digitalWrite(S2, sensor & 4);
+```
+
+Depois disso, o valor é lido pela entrada analógica:
+
+```cpp
+int valor = analogRead(LDR);
+```
+
+### Regra de ocupação
+
+O valor de referência atual é:
 
 ```cpp
 int threshold = 500;
 ```
 
-A regra adotada é:
+A lógica utilizada é:
 
 ```text
 valor < 500  → vaga ocupada
 valor >= 500 → vaga livre
 ```
 
-Depois de identificar o estado, o ESP8266 envia uma requisição `POST` para a API da vaga correspondente, por exemplo:
+No código:
+
+```cpp
+bool ocupada = (valor < threshold);
+```
+
+> O `threshold` pode precisar ser calibrado quando a maquete estiver montada e funcionando no ambiente real.
+
+### Controle dos LEDs
+
+Os oito LEDs são controlados através de um **PCF8574**, configurado no endereço I2C:
+
+```cpp
+#define PCF 0x20
+```
+
+A comunicação I2C usa:
+
+```cpp
+Wire.begin(D2, D1);
+```
+
+No funcionamento atual:
+
+```text
+vaga ocupada → LED ligado
+vaga livre   → LED desligado
+```
+
+### Conexão Wi-Fi
+
+O ESP8266 funciona em modo estação (`WIFI_STA`), conectando-se a uma rede Wi-Fi já existente:
+
+```cpp
+WiFi.mode(WIFI_STA);
+WiFi.setAutoReconnect(true);
+WiFi.begin(WIFI_SSID, WIFI_SENHA);
+```
+
+As credenciais devem ser configuradas no código:
+
+```cpp
+const char* WIFI_SSID  = "NOME_DO_WIFI";
+const char* WIFI_SENHA = "SENHA_DO_WIFI";
+```
+
+### Comunicação com o servidor
+
+O servidor atual é definido por:
+
+```cpp
+const char* SERVIDOR = "http://192.168.1.100";
+```
+
+Cada vaga é enviada individualmente por uma requisição HTTP `POST`.
+
+As rotas utilizadas são:
 
 ```text
 /api/vagas/1
+/api/vagas/2
+/api/vagas/3
+/api/vagas/4
+/api/vagas/5
+/api/vagas/6
+/api/vagas/7
+/api/vagas/8
 ```
 
-com um JSON como:
+O corpo enviado segue este formato:
 
 ```json
 {"ocupada":1}
@@ -254,8 +342,29 @@ ou:
 {"ocupada":0}
 ```
 
+O ESP8266 também exibe no Monitor Serial o número da vaga, seu estado e o código HTTP retornado pelo servidor.
+
+Exemplo:
+
+```text
+V1 = 1 | HTTP 200
+V2 = 0 | HTTP 200
+```
+
+### Ciclo de leitura e envio
+
+O `loop()` percorre as oito vagas, lê cada sensor, atualiza o estado dos LEDs e envia os dados para o servidor.
+
+Ao finalizar o ciclo completo, o programa aguarda:
+
+```cpp
+delay(2000);
+```
+
+antes de iniciar uma nova leitura das oito vagas.
+
 <details>
-<summary><strong>Ver código completo — sensores, ESP8266, LEDs e envio ao servidor</strong></summary>
+<summary><strong>Ver código atualizado do Leonardo — ESP8266, sensores, LEDs e envio HTTP</strong></summary>
 
 ```cpp
 #include <Wire.h>
@@ -735,7 +844,7 @@ Os arquivos da interface ficam organizados dentro da própria seção do site. N
 
             <div>
                 <strong>
-                    ESP32 processa
+                    ESP8266 processa
                 </strong>
 
                 <p>
@@ -800,7 +909,7 @@ Os arquivos da interface ficam organizados dentro da própria seção do site. N
 <summary><strong>JavaScript — script.js</strong></summary>
 
 ```javascript
-// Quando o ESP32 servir o site, esta rota funciona sem mudar o front-end.
+// Quando o servidor disponibilizar o site, esta rota funciona sem mudar o front-end.
 const API_URL = "/vagas";
 const INTERVALO_ATUALIZACAO = 1000;
 const TEMPO_LIMITE = 4000;
@@ -841,7 +950,7 @@ function definirStatus(classe, texto) {
     statusConexao.append(indicador, document.createTextNode(texto));
 }
 
-// Somente 0 e 1 numéricos são aceitos, conforme o contrato com o ESP32.
+// Somente 0 e 1 numéricos são aceitos, conforme o contrato com o ESP8266.
 function validarDados(dados) {
     if (!dados || !chaves.every(chave => dados[chave] === 0 || dados[chave] === 1)) {
         throw new Error("A API precisa enviar V1 a V8 com valores 0 ou 1");
@@ -2073,26 +2182,29 @@ VagaJa/
 
 ## Status atual
 
-O projeto está estruturado para **8 vagas** e atualmente possui:
+O projeto está estruturado para **8 vagas (V1 a V8)** e o código atual do ESP8266 já possui:
 
-- leitura planejada de 8 LDRs usando CD4051;
+- leitura de 8 sensores LDR através do CD4051;
+- uso da entrada analógica `A0`;
+- seleção dos sensores pelos pinos `D5`, `D6` e `D7`;
 - controle de 8 LEDs pelo PCF8574;
-- conexão do ESP8266 a uma rede Wi-Fi;
-- envio HTTP do estado de cada vaga;
-- estados representados por `0` e `1`;
-- interface web preparada para V1 até V8;
-- contador de vagas disponíveis;
-- atualização automática da interface.
+- comunicação I2C pelos pinos `D2` e `D1`;
+- conexão do ESP8266 a uma rede Wi-Fi em modo `WIFI_STA`;
+- reconexão automática habilitada;
+- envio HTTP `POST` para `/api/vagas/1` até `/api/vagas/8`;
+- envio do estado no formato `{"ocupada":0}` ou `{"ocupada":1}`;
+- repetição do ciclo após aproximadamente 2 segundos;
+- interface web preparada para mostrar as 8 vagas.
 
 ## Próximas etapas
 
 - calibrar o valor `threshold` dos LDRs na maquete;
-- configurar o endereço definitivo do servidor;
-- integrar o ESP8266 à VPS;
+- configurar o endereço definitivo do servidor/VPS;
+- integrar o ESP8266 ao servidor definitivo;
 - adicionar autenticação na comunicação com a API;
 - publicar o site no domínio definitivo;
-- adicionar tratamento para dados desatualizados e perda de conexão;
-- testar todo o sistema com as oito vagas reais.
+- adicionar tratamento para dados desatualizados e perda de comunicação;
+- testar o sistema completo com as oito vagas reais.
 
 ## Projeto acadêmico
 
